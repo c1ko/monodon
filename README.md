@@ -36,6 +36,9 @@ To make use of monodon, you need to supply at least one scan mode and the scanwo
 2022-02-07 22:05:10,894 Current scanrate is 9 scans/sec, scan-delay is 0.45s
 ```
 
+### Result format
+Monodon documents all results in an sqlite database called $SCANWORD.db in the monodon directory. You can dump the contents of the database using the `dump_db.py` script from the project folder.  
+
 ### Scan modes
 Monodon supports various scan modes.
 ```
