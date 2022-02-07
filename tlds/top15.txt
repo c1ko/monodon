@@ -1,0 +1,15 @@
+com
+net
+org
+de
+icu
+uk
+ru
+info
+top
+xyz
+tk
+cn
+ga
+cf
+nl

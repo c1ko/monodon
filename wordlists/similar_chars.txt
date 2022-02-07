@@ -1,0 +1,107 @@
+# Homograph glyph list
+# Original letter are first
+# ! marks an important swap
+
+# ASCII similarities
+! 1 l I
+
+# ASCII multi-letter similarities
+! m rn 
+! A fi 
+! d cl
+! w vv uu
+
+# L33tspeak
+! o 0
+! e 3
+! a 4
+! b 8
+
+# Phoentic similarities
+! sch sh
+! ss ß
+! s z
+! d t
+! q c
+! o u
+
+# German letters
+! a ä
+! o ö
+! u ü
+
+# Cyrillic lower letters (second letter is cyrillic)
+a а
+c с
+e е
+o о
+p р
+x х
+y у
+3 З
+4 Ч
+6 б
+
+і i
+ј j
+ԛ q
+ѕ s
+ԝ w
+ä ӓ
+e ё 
+i ї
+ö ӧ
+
+
+# Cyrillic upper letters (second letter is cyrillic)
+A А
+B В
+C С
+E Е
+H Н
+I І
+J Ј
+K К
+M М
+O О
+P Р
+S Ѕ
+T Т
+X Х
+
+Y Y
+F Ғ
+G Ԍ
+
+
+# Greek lower letters (second letter is greek)
+o ο
+v ν
+a α 
+e ε
+i ι
+k κ
+n η
+p ρ
+t τ
+u υ
+w ω
+x χ
+y γ
+
+
+# Greek upper letters (second letter is greek)
+A Α
+B Β
+E Ε
+H Η
+I Ι
+K Κ
+M Μ
+N Ν
+O Ο
+P Ρ
+T Τ
+X Χ
+Y Υ
+Z Ζ

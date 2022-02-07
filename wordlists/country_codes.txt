@@ -1,0 +1,18 @@
+# Country codes most used for domainsquatting
+DE
+US
+FR
+GB
+NL
+AU
+CN
+HK
+TW
+KR
+CA
+BE
+ES
+SE
+CH
+TR
+AT
