@@ -72,6 +72,8 @@ Monodon supports various scan modes.
 
 `--wiki` Use wikipedia to generate term-related wordlists to scan. Monodon downloads the wikipedia article for a the given term(s) and generates a list of the most common words. You can either use `--wikiterms` to supply the Wikipedia pages to use, or configure them in the config file. In the config file, you can also set the number of words to scan (default ist 750). 
 
+`--wordlist` Scan additional wordlists defined in the config.ini file. 
+
 ```
 (venv) [mono@mono monodon]$ ./monodon.py monodon --wiki --wikiterms whale monodon tooth 
 2022-02-07 22:34:43,261 Loaded 9211 domains from publicsuffix.org
