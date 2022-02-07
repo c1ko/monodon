@@ -57,9 +57,9 @@ Monodon supports various scan modes.
 
 `--slds` Scan all registered top-level domains and all second level domains known to publicsuffix.org. Like for `--tld` you can override the list with the `--tldfile` option. 
 
-`--homo` Generate homoglyphic variants of the supplied scanword. This will replace letters lile "l" with "1" or "I" to generate similar looking domain names. Scanned tlds can be set in the config.ini file, default are often-abused tlds.
+`--homo` Generate homoglyphic variants of the supplied scanword. Scanned hosts for "monodon" would be "m0nodon" or "monoton".
 
-`--chars` Insert and remove chars from within the scanword. Scanned hosts for "monodon" would for example be "mondon" or "monodono". Scanned tlds can be set in the config.ini file, default are often-abused tlds.
+`--chars` Insert and remove chars from within the scanword. Scanned hosts for "monodon" would for example be "mondon" or "monodono". 
 
 `--numbers` Count numbers up and down in the domain name. Scanned hosts for "monodon24" would be "monodon42" or "monodon02".
 
