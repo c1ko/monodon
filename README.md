@@ -2,7 +2,7 @@
 Domain abuse scanner covering domainsquatting and phishing keywords
 
 ## Setup
-Monodon is a standard python3 programm. To setup on a Linux machine with Python 3, take the following steps.
+Monodon is a Python 3 programm. To setup on a Linux machine with Python 3, take the following steps.
 
 ```
 git clone https://github.com/c1ko/monodon.git
