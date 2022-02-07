@@ -14,7 +14,7 @@ pip3 install -r requirements.txt
 ## Before usage
 Monodon uses the SOA record of domains to check if is registered. The presence of this record definitly means it is registered. If the SOA flag is missing, the domain can still be registered!
 
-Monodon will generate a DNS query for every domain to check. Public nameservers like `8.8.8.8`, `8.8.4.4`, and `9.9.9.9` can sustain 20 queries and more per second without throtteling. You can control the rate of queries using the `--rate` argument. By default, `--rate` is set to 10 queries per second.
+Monodon will generate a DNS query for every domain to check. Public nameservers like `8.8.8.8`, `8.8.4.4`, and `9.9.9.9` can sustain 20 queries and more per second without throtteling. Set a nameserver using the `--nameserver` setting. Otherwise monodon will use your systems nameserver. You can control the rate of queries using the `--rate` argument. By default, `--rate` is set to 10 queries per second. 
 
 ## Usage
 You can configure monodon using the command line and the config.ini file. Some options can only be set in one of these sources.
@@ -83,5 +83,7 @@ For most scan modes the scanned tlds can be set in the config.ini file. Default 
 `--rate` Scans executed per second. This rate can be exceeded for short periods of time, but will auto-adjust.
 
 `--threads` Number of scan threads to use. Especially with slow nameservers, a higher number of threads is adviced. The standard 5 threads is usually a good choice.
+
+`--nameserver` Use another than the system's nameserver to scan.
 
 `--config` Load a different config file than the standard config.ini.
