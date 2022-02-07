@@ -84,4 +84,4 @@ For most scan modes the scanned tlds can be set in the config.ini file. Default 
 
 `--threads` Number of scan threads to use. Especially with slow nameservers, a higher number of threads is adviced. The standard 5 threads is usually a good choice.
 
-`--config` Load a different config file than the standard config.ini
+`--config` Load a different config file than the standard config.ini.
