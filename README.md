@@ -53,7 +53,7 @@ Monodon supports various scan modes.
 
 `--all` Use all scanning techniques mentioned below. This can be a lengthy endeavor, depending on how many wikipedia terms will be scannend, which tlds are scanned, and how long the scanword ist. Monodon can easily generate 1 million or more domains to scan.
 
-`--tlds` Scan all registered top-level domains. Monodon downloads a fresh list of tlds from [https://publicsuffix.org/list] every time the command is run. If you do not want to download a fresh list, you can supply the `--tldfile` flag to supply a custom tld file to use.
+`--tlds` Scan all registered top-level domains. Monodon downloads a fresh list of tlds from https://publicsuffix.org/list every time the command is run. If you do not want to download a fresh list, you can supply the `--tldfile` flag to supply a custom tld file to use.
 
 `--slds` Scan all registered top-level domains and all second level domains known to publicsuffix.org. Like for `--tld` you can override the list with the `--tldfile` option. 
 
