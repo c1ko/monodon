@@ -39,6 +39,7 @@ parser.add_argument("--forcetlds", type=str, default=None, nargs="+", help="Over
 parser.add_argument("--tldfile", type=str, default=None, nargs="?", help="Instead of downloading a fresh copy from publicsuffix.org, use this as a list of all tlds and slds")
 parser.add_argument("--threads", type=parser_check_threads, default=5, help="Number of scanthreads to start")
 parser.add_argument("--rate", type=parser_check_rate, default=10, help="Scans per second to aim for")
+parser.add_argument("--nameserver", type=str, nargs="?", default=None, help="DNS server to use")
 
 args = parser.parse_args()
 
@@ -93,8 +94,11 @@ def scan_wordlist(scanword, wordlist, tld_list):
 
 class ScanThread(threading.Thread):
 	def _touch_domain(self, host, tld):
+		resolver = dns.resolver.Resolver()
+		if self.nameserver:
+			resolver.nameservers = [self.nameserver]
 		try:
-			soa_records = dns.resolver.resolve(".".join([host, tld]), "SOA")
+			soa_records = resolver.resolve(".".join([host, tld]), "SOA")
 		except dns.resolver.NXDOMAIN:
 			return False
 		except Exception as e:
@@ -150,9 +154,10 @@ class ScanThread(threading.Thread):
 				self.scan_tlds(to_scan)
 
 
-	def __init__(self):
+	def __init__(self, nameserver=None):
 		super(ScanThread, self).__init__()
 		self.busy = False
+		self.nameserver = nameserver
 
 
 class WatchThread(threading.Thread):
@@ -197,7 +202,7 @@ watch_thread.start()
 
 threadpool = []
 for i in range(0, args.threads):
-	threadpool.append(ScanThread())
+	threadpool.append(ScanThread(nameserver=args.nameserver))
 	threadpool[-1].start()
 
 # Scan all tlds and known slds
