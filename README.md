@@ -58,7 +58,7 @@ Monodon supports various scan modes.
 
 `--tlds` Scan all registered top-level domains. Monodon downloads a fresh list of tlds from https://publicsuffix.org/list every time the command is run. If you do not want to download a fresh list, you can supply the `--tldfile` flag to supply a custom tld file to use.
 
-`--slds` Scan all registered top-level domains and all second level domains known to publicsuffix.org. Like for `--tld` you can override the list with the `--tldfile` option. 
+`--slds` Scan all registered top-level domains and all second level domains known to publicsuffix.org. Like for `--tld` you can override the list with the `--tldfile` option. Monodon will automatically check if the tld accepts any hostname, like many of the AWS domains do, and document the result in the database.
 
 `--homo` Generate homoglyphic variants of the supplied scanword. Scanned hosts for "monodon" would be "m0nodon" or "monoton".
 
