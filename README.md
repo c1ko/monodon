@@ -76,7 +76,7 @@ Monodon supports various scan modes.
 2022-02-07 22:34:44,380 Scanning 15000 domains..
 ```
 
-For `--homo`, `--chars`, `--numbers`, `--phishing`, `--ccodes` the scanned tlds can be set in the config.ini file. Default are often-abused tlds, but you can replace this by top 5, top 15, all, or specific tlds.
+For most scan modes the scanned tlds can be set in the config.ini file. Default are often-abused tlds, but you can replace this by top 5, top 15, all, or specific tlds. You can also use `--forcetlds` to execute all scans on a specific set of tlds.
 
 ### Scan settings
 
