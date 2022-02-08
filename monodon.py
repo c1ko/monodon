@@ -99,6 +99,7 @@ def get_argument(argument, config_section, config_key, **kwargs):
 	else:
 		try:
 			configuration_setting = config[config_section].get(config_key).strip()
+			print(configuration_setting)
 			if " " in configuration_setting: # Is an array?
 				return configuration_setting.split()
 			else:
