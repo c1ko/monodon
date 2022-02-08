@@ -313,8 +313,8 @@ if args.all or args.numbers:
 # Scan wikipedia wordlists
 if args.all or args.wiki:
 	# Generate and scan related wordlist
-	print(args.wiki)
 	lemmas = get_argument(args.wiki, "WIKI", "Lemmas")
+	print(lemmas)
 	logging.info(f"Generating wikipedia wordlist from lemmas {', '.join(lemmas)}")
 
 	related_terms = {}
