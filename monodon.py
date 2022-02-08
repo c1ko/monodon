@@ -31,6 +31,7 @@ parser.add_argument("--nameserver", type=str, nargs="?", default=None, help="DNS
 parser.add_argument("--verbose", default=False, action="store_true", help="Log all DNS queries and errors")
 parser.add_argument("--simulate", default=False, action="store_true", help="Execute no queries")
 parser.add_argument("--unsafe", default=False, action="store_true", help="Disable safeguards that prevent DOS'ing nameservers")
+parser.add_argument("--unregistered", default=False, action="store_true", help="Experimental: Instead of finding registered domains, log unregistered domain names")
 
 group_scan_modes = parser.add_argument_group("Scan modes")
 group_scan_modes.add_argument("--all", default=False, action='store_true', help="Execute all scanning techniques")
@@ -84,27 +85,38 @@ logging.basicConfig(format="%(asctime)s %(message)s", level=logging_level, datef
 if args.simulate:
 	logging.warning("SIMULATION MODE, NO DNS QUERIES WILL BE MADE")
 
-def get_argument(argument, config_section, config_key, **kwargs):
+def get_argument(argument, config_section, config_key, return_type=str, **kwargs):
 	global config
+
+	return_value = None
 
 	# Try argument first
 	if argument is not None:
-		return argument
+		return_value = argument
 
 	# Try config second
 	else:
 		try:
 			configuration_setting = config[config_section].get(config_key).strip()
-			if " " in configuration_setting: # Is an array?
-				return configuration_setting.split()
-			else:
-				return configuration_setting
+			return_value = configuration_setting
 		except Exception as e:
 			if "default" in kwargs:
 				return kwargs["default"]
 			else:
 				logging.warning(e)
 				sys.exit(f"Configuration and arguments do not contain information on {config_section} {config_key}")
+
+	if return_type == str:
+		return str(return_value)
+	elif return_type == int:
+		return int(return_value)
+	elif return_type == list:
+		if isinstance(return_value, list):
+			return return_value
+		elif isinstance(return_value, int):
+			return [return_value]
+		elif isinstance(return_value, str):
+			return return_value.split()
 
 
 def load_wordlist_file(filename):
@@ -180,10 +192,15 @@ class ScanThread(threading.Thread):
 		for tld in to_scan[1]:
 			glob_scancounter += 1
 			dns_result = self._touch_domain(host, tld)
-			if dns_result:
+			if dns_result and self.unregistered == False:
 				logging.warning(f"Found: {host}.{tld} on {dns_result[0]}")
 				accepts_anyhost = True if self._touch_domain("jdwqnwqqnwdsauuwuwdnakkkasd", tld) else False
 				self._note_domain(host, tld, dns_result[0], accepts_anyhost)
+				glob_found_domains += 1
+
+			elif not dns_result and self.unregistered == True:
+				logging.warning(f"Unregistered: {host}.{tld}")
+				self._note_domain(host, tld, "UNREGISTERED", False)
 				glob_found_domains += 1
 
 			time.sleep(glob_scan_delay)
@@ -200,10 +217,11 @@ class ScanThread(threading.Thread):
 				self.scan_tlds(to_scan)
 
 
-	def __init__(self, nameserver=None, simulate=False):
+	def __init__(self, nameserver=None, simulate=False, unregistered=False):
 		super(ScanThread, self).__init__()
 		self.resolver = dns.resolver.Resolver()
 		self.simulate = simulate
+		self.unregistered = unregistered
 		if nameserver:
 			self.resolver.nameservers = [nameserver]
 
@@ -251,8 +269,8 @@ watch_thread.daemon = True
 watch_thread.start()
 
 threadpool = []
-for i in range(0, get_argument(args.threads, "GENERAL", "threads")):
-	threadpool.append(ScanThread(nameserver=get_argument(args.nameserver, "GENERAL", "nameserver", default=None), simulate=args.simulate))
+for i in range(0, get_argument(args.threads, "GENERAL", "threads", return_type=int)):
+	threadpool.append(ScanThread(nameserver=get_argument(args.nameserver, "GENERAL", "nameserver", default=None, return_type=str), simulate=args.simulate, unregistered=args.unregistered))
 	threadpool[-1].start()
 
 # Scan all tlds and known slds
@@ -279,14 +297,14 @@ if args.all or args.chars:
 
 	for host in generate_char_simple(SCANWORD):
 		if host != SCANWORD: 
-			scan_host(host, tld_gen.generate_tlds(get_argument(args.chars_tlds, "CHARS", "TLDs")))
+			scan_host(host, tld_gen.generate_tlds(get_argument(args.chars_tlds, "CHARS", "TLDs", return_type=list)))
 
 # Scan homoglyphs
 if args.all or args.homo:
 	logging.info(f"Scanning homoglyphs")
 
 	for host in generate_homoglyphs(SCANWORD):
-		scan_host(host, tld_gen.generate_tlds(get_argument(args.homo_tlds, "HOMO", "TLDs")))
+		scan_host(host, tld_gen.generate_tlds(get_argument(args.homo_tlds, "HOMO", "TLDs", return_type=list)))
 
 # Scan for all country codes
 if args.all or args.ccodes:
@@ -294,7 +312,7 @@ if args.all or args.ccodes:
 	scan_wordlist(
 		SCANWORD, 
 		load_wordlist_file("wordlists/country_codes.txt"), 
-		tld_gen.generate_tlds(get_argument(args.ccodes_tlds, "CCODES", "TLDs"))
+		tld_gen.generate_tlds(get_argument(args.ccodes_tlds, "CCODES", "TLDs", return_type=list))
 	)
 
 # Scan often-used phshing wordlist
@@ -303,7 +321,7 @@ if args.all or args.phishing:
 	scan_wordlist(
 		SCANWORD, 
 		load_wordlist_file("wordlists/phishing.txt"), 
-		tld_gen.generate_tlds(get_argument(args.phishing_tlds, "PHISHING", "TLDs"))
+		tld_gen.generate_tlds(get_argument(args.phishing_tlds, "PHISHING", "TLDs", return_type=list))
 	)
 
 # Scan numbers
@@ -311,12 +329,12 @@ if args.all or args.numbers:
 	logging.info(f"Scanning numbers")
 
 	for host in generate_numbers(SCANWORD):
-		scan_host(host, tld_gen.generate_tlds(get_argument(args.numbers_tlds, "NUMBERS", "TLDs")))
+		scan_host(host, tld_gen.generate_tlds(get_argument(args.numbers_tlds, "NUMBERS", "TLDs", return_type=list)))
 
 # Scan wikipedia wordlists
 if args.all or args.wiki:
 	# Generate and scan related wordlist
-	lemmas = get_argument(args.wiki, "WIKI", "Lemmas")
+	lemmas = get_argument(args.wiki, "WIKI", "Lemmas", return_type=list)
 	logging.info(f"Generating wikipedia wordlist from lemmas {', '.join(lemmas)}")
 
 	related_terms = {}
@@ -329,13 +347,13 @@ if args.all or args.wiki:
 			else:
 				related_terms[term] = relevance
 
-	sorted_related_terms = sorted(related_terms.items(), key=lambda x: x[1], reverse=True)[:int(get_argument(args.wiki_count, "WIKI", "Count"))]
+	sorted_related_terms = sorted(related_terms.items(), key=lambda x: x[1], reverse=True)[:int(get_argument(args.wiki_count, "WIKI", "Count", return_type=int))]
 
 	if args.wiki_test is False:
 		scan_wordlist(
 			SCANWORD, 
 			map(lambda x: x[0], sorted_related_terms), 
-			tld_gen.generate_tlds(get_argument(args.wiki_tlds, "WIKI", "TLDs"))
+			tld_gen.generate_tlds(get_argument(args.wiki_tlds, "WIKI", "TLDs", return_type=list))
 		)
 	else:
 		print(", ".join(map(lambda x: str(x), sorted_related_terms)))
@@ -345,8 +363,8 @@ if args.all or args.wordlist:
 	logging.info(f"Scanning wordlist")
 	scan_wordlist(
 		SCANWORD,
-		load_wordlist_file(get_argument(args.wordlist, "WORDLIST", "Path")),
-		tld_gen.generate_tlds(get_argument(args.wordlist_tlds, "WORDLIST", "TLDs"))
+		load_wordlist_file(get_argument(args.wordlist, "WORDLIST", "Path", return_type=str)),
+		tld_gen.generate_tlds(get_argument(args.wordlist_tlds, "WORDLIST", "TLDs", return_type=list))
 	)
 
 logging.warning(f"Scanning {sum(map(lambda x: len(x), glob_known_hosts.values()))} domains...")
