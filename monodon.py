@@ -29,6 +29,7 @@ parser.add_argument("--threads", type=parser_check_positive, default=5, help="Nu
 parser.add_argument("--rate", type=parser_check_positive, default=10, help="Scans per second")
 parser.add_argument("--nameserver", type=str, nargs="?", default=None, help="DNS server to use")
 parser.add_argument("--verbose", default=False, action="store_true", help="Log all DNS queries and errors")
+parser.add_argument("--simulate", default=False, action="store_true", help="Execute no queries")
 
 group_scan_modes = parser.add_argument_group("Scan modes")
 group_scan_modes.add_argument("--all", default=False, action='store_true', help="Execute all scanning techniques")
@@ -145,6 +146,9 @@ def scan_wordlist(scanword, wordlist, tld_list):
 
 class ScanThread(threading.Thread):
 	def _touch_domain(self, host, tld):
+		if self.simulate:
+			return False
+
 		try:
 			soa_records = self.resolver.resolve(".".join([host, tld]), "SOA")
 		except Exception as e:
@@ -202,9 +206,10 @@ class ScanThread(threading.Thread):
 				self.scan_tlds(to_scan)
 
 
-	def __init__(self, nameserver=None):
+	def __init__(self, nameserver=None, simulate=False):
 		super(ScanThread, self).__init__()
 		self.resolver = dns.resolver.Resolver()
+		self.simulate = simulate
 		if nameserver:
 			self.resolver.nameservers = [nameserver]
 
@@ -251,7 +256,7 @@ watch_thread.start()
 
 threadpool = []
 for i in range(0, get_argument(args.threads, "GENERAL", "threads")):
-	threadpool.append(ScanThread(nameserver=get_argument(args.nameserver, "GENERAL", "nameserver", default=False)))
+	threadpool.append(ScanThread(nameserver=get_argument(args.nameserver, "GENERAL", "nameserver", default=False), simulate=args.simulate))
 	threadpool[-1].start()
 
 # Scan all tlds and known slds
