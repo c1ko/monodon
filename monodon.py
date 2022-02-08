@@ -90,6 +90,9 @@ logging_level = logging.DEBUG if args.verbose else logging.INFO
 
 logging.basicConfig(format="%(asctime)s %(message)s", level=logging_level, datefmt=logging_datefmt)
 
+if args.simulate:
+	logging.warn("SIMULATION MODE, NO QUERIES WILL BE MADE")
+
 def get_argument(argument, config_section, config_key, **kwargs):
 	global config
 
