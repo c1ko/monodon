@@ -327,6 +327,7 @@ if args.all or args.wiki:
 			else:
 				related_terms[term] = relevance
 
+	print(get_argument(args.wiki_count, "WIKI", "Count"))
 	sorted_related_terms = sorted(related_terms.items(), key=lambda x: x[1], reverse=True)[:get_argument(args.wiki_count, "WIKI", "Count")]
 
 	scan_wordlist(
