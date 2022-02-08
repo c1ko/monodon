@@ -10,7 +10,8 @@ import configparser
 import sqlite3
 import queue
 import logging
-import threading 
+import threading
+import random
 
 from utils.parser_checks import parser_check_positive
 from utils.squat_generator import generate_char_simple, generate_homoglyphs, generate_numbers
@@ -194,7 +195,7 @@ class ScanThread(threading.Thread):
 			dns_result = self._touch_domain(host, tld)
 			if dns_result and self.unregistered == False:
 				logging.warning(f"Found: {host}.{tld} on {dns_result[0]}")
-				accepts_anyhost = True if self._touch_domain("jdwqnwqqnwdsauuwuwdnakkkasd", tld) else False
+				accepts_anyhost = True if self._touch_domain("".join(random.choices(string.ascii_lowercase, k=15)), tld) else False
 				self._note_domain(host, tld, dns_result[0], accepts_anyhost)
 				glob_found_domains += 1
 
