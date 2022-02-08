@@ -43,7 +43,7 @@ class TLDGenerator():
 				out_tlds += self.TOP5_TLDS
 			elif desired_tld == "top15":
 				out_tlds += self.TOP15_TLDS
-			elif desired_tld in ALL_TLDS_INCL_SLDS:
+			elif desired_tld in self.ALL_TLDS_INCL_SLDS:
 				out_tlds += desired_tld
 			else:
 				logging.warn(f"Top-level-domain .{desired_tld} is not public, check if typo. Scanning it anyway.")
