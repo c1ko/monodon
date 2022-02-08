@@ -8,7 +8,7 @@ import dns.resolver
 parser = argparse.ArgumentParser(description="Dump the domainsquatting database")
 parser.add_argument("dbfile", type=str, help="Squatting database to load")
 parser.add_argument("--slowness", nargs="?", type=float, default=1, help="Speed factor to reduce DOS potential")
-parser.add_argument("--filter", nargs="?", type=str, default=1, help="Speed factor to reduce DOS potential")
+parser.add_argument("--nsfilter", nargs="?", default=None, type=str, help="Filter out certain nameservers")
 args = parser.parse_args()
 
 # Setup the database
@@ -67,6 +67,13 @@ def check_mx_record(domain):
 
 all_results = []
 for row in cur.execute("SELECT * FROM domains"):
+
+	# Filter out certain nameservers
+	if args.nsfilter is not None:
+		if args.nsfilter in row[2]:
+			continue
+
+
 	domain = {
 		"host": row[0],
 		"tld": row[1],
