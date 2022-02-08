@@ -16,11 +16,11 @@ Monodon uses the SOA record of domains to check if is registered. The presence o
 
 Monodon will generate a DNS query for every domain to check. Public nameservers like `8.8.8.8`, `8.8.4.4`, and `9.9.9.9` can sustain 20 queries and more per second without throtteling. Set a nameserver using the `--nameserver` setting. Otherwise monodon will use your systems nameserver. You can control the rate of queries using the `--rate` argument. By default, `--rate` is set to 10 queries per second. 
 
-If you want to create more than 10 queries per second thread, use the `--unsafe` keyword. This safeguard protects from unwated DOS attacks on public DNS servers. 
+If you want to create more than 10 queries per second thread, use the `--unsafe` keyword. This safeguard protects from unwated DOS attacks on public DNS servers. To not create any actual DNS queries, use the `--simulate` argument. 
 
 ## Usage
 You can configure most settings using the command line and the config.ini file. Some options can only be set as an argument.
-To make use of monodon, you need to supply at least one scan mode and the scanword. The scanword usually is the name of your brand, or the host portion of the domain you want to find squats of.
+To make use of monodon, you need to supply at least one scan mode and the scanword. The scanword usually is the name of your brand, or the host portion of the domain you want to find squats of. 
 
 ```
 (venv) [mono@mono monodon]$ ./monodon.py --tlds monodon
@@ -44,16 +44,16 @@ Monodon documents all results in an sqlite database called $SCANWORD.db in the m
 ### Scan modes
 Monodon supports various scan modes.
 ```
-  --all                 Execute all scanning techniques
-  --tlds                Scan all tlds
-  --slds                Scan all tlds and known slds
-  --homo                Scan homoglyphs
-  --chars               Scan character replacements and additions
-  --numbers             Iterate numbers in the domain name
-  --phishing            Scan phishing wordlist
-  --ccodes              Scan two-letter country codes
-  --wiki                Scan Wikipedia generated related word lists
-  --wordlist            Scan wordlists defined in config file
+  --all                      Execute all scanning techniques
+  --tlds                     Scan all TLDs
+  --slds                     Scan all TLDs and known SLDs
+  --homo                     Scan homoglyphs
+  --chars                    Scan character replacements and additions
+  --numbers                  Iterate numbers in the domain name
+  --phishing                 Scan phishing wordlist
+  --ccodes                   Scan two-letter country codes
+  --wiki WIKI [WIKI ...]     Scan words from wikipedia lemmas (e.g. 'en:whale')
+  --wordlist [WORDLIST]      Scan an additional wordlist file
 ```
 
 `--all` Use all scanning techniques mentioned below. This can be a lengthy endeavor, depending on how many wikipedia terms will be scannend, which tlds are scanned, and how long the scanword ist. Monodon can easily generate 1 million or more domains to scan.
@@ -109,3 +109,38 @@ For most scan modes the scanned tlds can be set in the config.ini file. These de
 `--config` Load a different config file than the standard config.ini.
 
 `--unsafe` Allow more than 10 queries per scanning thread.
+
+## Examples
+
+Scan all tlds for the exact hostname:
+```
+(venv) $ ./monodon.py --tlds monodon 
+Loaded 9211 domains from publicsuffix.org
+Scanning tlds
+Scanning 1495 domains...
+```
+
+Scan for char replacements and homoglyphic replacements on the top 5 TLDs:
+```
+(venv) $ ./monodon.py --chars --chars_tlds top5 --homo_tlds top5 --homo monodon
+Loaded 9211 domains from publicsuffix.org
+Scanning simple char replacements
+Scanning homoglyphs
+Scanning 2890 domains...
+Found: moodon.com on ns23.domaincontrol.com.
+Found: mondon.com on ns1.cornut.fr.
+...
+```
+
+Scan for number and phishing variants only on the ".de" domain, using a custom nameserver and a higher rate:
+```
+(venv) $ ./monodon.py --numbers --phishing --forcetlds de --rate 15 --nameserver 9.9.9.9 monodon24
+```
+
+Scan for the top 20 words from Wikipedia articles:
+
+```
+(venv) $ ./monodon.py --wiki en:whale de:narwal --wiki_count 20  monodon
+Loaded 9211 domains from publicsuffix.org
+Generating wikipedia wordlist from lemmas en:whale, de:narwal
+```
