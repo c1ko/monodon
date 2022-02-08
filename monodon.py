@@ -204,7 +204,7 @@ class ScanThread(threading.Thread):
 		super(ScanThread, self).__init__()
 		self.resolver = dns.resolver.Resolver()
 		if nameserver:
-			self.resolver.nameservers = [self.nameserver]
+			self.resolver.nameservers = [nameserver]
 
 
 class WatchThread(threading.Thread):
