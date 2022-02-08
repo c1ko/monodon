@@ -23,11 +23,6 @@ with open("domain_protection_nameservers.txt", "r") as f:
 		if line != "": 
 			domain_protection_ns.append(line.strip())
 
-def set_verdict(domain, verdict):
-	domain["continue_scanning"] = verdict["continue_scanning"]
-	domain["verdict"].append(verdict["verdict"])
-	return domain
-
 def check_domain_protection(domain):
 	global domain_protection_ns
 
@@ -38,41 +33,19 @@ def check_domain_protection(domain):
 	return False
 
 
-def check_a_record(domain):
+def check_record(domain, record):
 	try:
-		q = dns.resolver.resolve(".".join([domain["host"], domain["tld"]]), "A")
+		q = dns.resolver.resolve(".".join([domain["host"], domain["tld"]]), record)
 		for rdata in q:
 			return rdata.to_text()
 	except Exception as e:
 		return None
 
-
-def check_aaaa_record(domain):
-	try:
-		q = dns.resolver.resolve(".".join([domain["host"], domain["tld"]]), "AAAA")
-		for rdata in q:
-			return rdata.to_text()
-	except Exception as e:
-		return None
-
-
-def check_mx_record(domain):
-	try:
-		q = dns.resolver.resolve(".".join([domain["host"], domain["tld"]]), "MX")
-		for rdata in q:
-			return rdata.to_text()
-	except Exception as e:
-		return None
-
-
-all_results = []
 for row in cur.execute("SELECT * FROM domains"):
-
 	# Filter out certain nameservers
 	if args.nsfilter is not None:
 		if args.nsfilter in row[2]:
 			continue
-
 
 	domain = {
 		"host": row[0],
@@ -81,9 +54,9 @@ for row in cur.execute("SELECT * FROM domains"):
 	}
 
 	domain["protected"] = check_domain_protection(domain)
-	domain["A"] = check_a_record(domain)
-	domain["AAAA"] = check_aaaa_record(domain)
-	domain["MX"] = check_mx_record(domain)
+	domain["A"] = check_record(domain, "A")
+	domain["AAAA"] = check_record(domain, "AAAA")
+	domain["MX"] = check_record(domain, "MX")
 
 	print(domain)
 
