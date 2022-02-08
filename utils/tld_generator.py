@@ -32,6 +32,9 @@ class TLDGenerator():
 		if self.forcedtlds:
 			return self.forcedtlds
 
+		if type(desired_tlds) == str:
+			desired_tlds = [desired_tlds]
+
 		for desired_tld in desired_tlds:
 			if desired_tld == "all_tlds":
 				out_tlds += self.ALL_TLDS
