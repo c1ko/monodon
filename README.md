@@ -16,8 +16,10 @@ Monodon uses the SOA record of domains to check if is registered. The presence o
 
 Monodon will generate a DNS query for every domain to check. Public nameservers like `8.8.8.8`, `8.8.4.4`, and `9.9.9.9` can sustain 20 queries and more per second without throtteling. Set a nameserver using the `--nameserver` setting. Otherwise monodon will use your systems nameserver. You can control the rate of queries using the `--rate` argument. By default, `--rate` is set to 10 queries per second. 
 
+If you want to create more than 10 queries per second thread, use the `--unsafe` keyword. This safeguard protects from unwated DOS attacks on public DNS servers. 
+
 ## Usage
-You can configure monodon using the command line and the config.ini file. Some options can only be set in one of these sources.
+You can configure most settings using the command line and the config.ini file. Some options can only be set as an argument.
 To make use of monodon, you need to supply at least one scan mode and the scanword. The scanword usually is the name of your brand, or the host portion of the domain you want to find squats of.
 
 ```
@@ -70,25 +72,33 @@ Monodon supports various scan modes.
 
 `--ccodes` Add ISO-3166 country codes to the host. Scanned hosts for "monodon" would be "monodon-us" or "usmonodon".
 
-`--wiki` Use wikipedia to generate term-related wordlists to scan. Monodon downloads the wikipedia article for a the given term(s) and generates a list of the most common words. You can either use `--wikiterms` to supply the Wikipedia pages to use, or configure them in the config file. In the config file, you can also set the number of words to scan (default ist 750). 
+`--wiki` Use wikipedia to generate term-related wordlists to scan. Monodon downloads the wikipedia article for a the given term(s) and generates a list of the most common words. You can supply lemmas in the config file or via the command line. Include the wikipedia language shorthand (e.g. "en" or "de"), seperated by a colon. To configure the number of used terms, use the `--wiki_count` option. 
+
+If you only want to check which words were generated (and what rating they have), use the `--wiki_test` flag. No wikipedia queries will be executed in this case.
 
 ```
-(venv) [mono@mono monodon]$ ./monodon.py monodon --wiki --wikiterms whale monodon tooth 
+(venv) [mono@mono monodon]$ ./monodon.py --wiki en:whale de:narwal monodon 
 2022-02-07 22:34:43,261 Loaded 9211 domains from publicsuffix.org
 2022-02-07 22:34:43,262 Scanning generated wikipedia wordlist
 2022-02-07 22:34:44,380 Scanning 15000 domains..
 ```
 
-`--wordlist` Scan additional wordlists defined in the config.ini file. 
+`--wordlist` Scan an additional wordlist file.
 
-For most scan modes the scanned tlds can be set in the config.ini file. Default are often-abused tlds, but you can replace this by top 5, top 15, all, or specific tlds. You can also use `--forcetlds` to execute all scans on a specific set of tlds.
+For most scan modes the scanned tlds can be set in the config.ini file. These defaults can be overriden using the `_tld` option for each mode. You can either supply direct tlds like "de" or "com", or prefiltered lists: "top5", "top15", "abused", "all_tlds". You can also use `--forcetlds` to execute all scans on a specific set of tlds, no matter what the config says.
 
-### Scan settings
+### General settings
 
 `--rate` Scans executed per second. This rate can be exceeded for short periods of time, but will auto-adjust.
 
 `--threads` Number of scan threads to use. Especially with slow nameservers, a higher number of threads is adviced. The standard 5 threads is usually a good choice.
 
+`--simulate` Simulate the DNS queries instead of actually executing them. Good for testing purposes.
+
+`--verbose` Log each DNS query, giving greater detail on what is going on.
+
 `--nameserver` Use another than the system's nameserver to scan.
 
 `--config` Load a different config file than the standard config.ini.
+
+`--unsafe` Allow more than 10 queries per scanning thread.
