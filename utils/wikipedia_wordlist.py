@@ -2,8 +2,8 @@ import requests
 import json
 import string
 
-def generate_wikipedia_wordlist(language_code, searchterm):
-	r = requests.get(f"https://{language_code}.wikipedia.org/w/api.php?action=query&format=json&titles={searchterm}&prop=extracts&explaintext")
+def generate_wikipedia_wordlist(title, language_code):
+	r = requests.get(f"https://{language_code}.wikipedia.org/w/api.php?action=query&format=json&titles={title}&prop=extracts&explaintext")
 	extract = list(r.json()["query"]["pages"].values())[0]["extract"]
 
 	relevant_words = {}

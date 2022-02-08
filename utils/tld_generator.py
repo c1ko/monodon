@@ -26,13 +26,15 @@ class TLDGenerator():
 
 		return returnlist
 
-	def generate_tlds(self, configuration_string):
+	def generate_tlds(self, desired_tlds):
 		out_tlds = []
 
 		if self.forcedtlds:
 			return self.forcedtlds
 
-		desired_tlds = configuration_string.split()
+		if type(desired_tlds) == str:
+			desired_tlds = [desired_tlds]
+
 		for desired_tld in desired_tlds:
 			if desired_tld == "all_tlds":
 				out_tlds += self.ALL_TLDS
@@ -44,7 +46,7 @@ class TLDGenerator():
 				out_tlds += self.TOP5_TLDS
 			elif desired_tld == "top15":
 				out_tlds += self.TOP15_TLDS
-			elif desired_tld in ALL_TLDS_INCL_SLDS:
+			elif desired_tld in self.ALL_TLDS_INCL_SLDS:
 				out_tlds += desired_tld
 			else:
 				logging.warn(f"Top-level-domain .{desired_tld} is not public, check if typo. Scanning it anyway.")
