@@ -60,6 +60,7 @@ phishing_settings.add_argument("--ccodes_tlds", type=str, nargs="+", help="TLDs 
 wiki_settings = parser.add_argument_group("wiki settings")
 wiki_settings.add_argument("--wiki_tlds", type=str, nargs="+", help="TLDs to scan")
 wiki_settings.add_argument("--wiki_count", type=parser_check_positive, help="Top # of Wikipedia terms to scan")
+wiki_settings.add_argument("--wiki_test", default=False, action="store_true", help="Print the wikipedia wordlist to check, dont scan")
 
 wordlist_settings = parser.add_argument_group("wordlist settings")
 wordlist_settings.add_argument("--wordlist_tlds", type=str, nargs="+", help="TLDs to scan")
@@ -329,11 +330,14 @@ if args.all or args.wiki:
 
 	sorted_related_terms = sorted(related_terms.items(), key=lambda x: x[1], reverse=True)[:int(get_argument(args.wiki_count, "WIKI", "Count"))]
 
-	scan_wordlist(
-		SCANWORD, 
-		map(lambda x: x[0], sorted_related_terms), 
-		tld_gen.generate_tlds(get_argument(args.wiki_tlds, "WIKI", "TLDs"))
-	)
+	if args.wikitest is None:
+		scan_wordlist(
+			SCANWORD, 
+			map(lambda x: x[0], sorted_related_terms), 
+			tld_gen.generate_tlds(get_argument(args.wiki_tlds, "WIKI", "TLDs"))
+		)
+	else:
+		print(", ".join(sorted_related_terms))
 
 # Scan additional wordlists
 if args.all or args.wordlist:
