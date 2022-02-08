@@ -57,7 +57,7 @@ class TLDGenerator():
 		self.forcedtlds = forcedtlds
 
 		if tldfile:
-			self.ALL_TLDS_INCL_SLDS = self._load_tld_file(args.tldfile)
+			self.ALL_TLDS_INCL_SLDS = self._load_tld_file(tldfile)
 		elif forcedtlds:
 			return # No need to load any files, domains are forced anyway
 		else:	
