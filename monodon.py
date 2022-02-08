@@ -99,12 +99,12 @@ def get_argument(argument, config_section, config_key, **kwargs):
 	else:
 		try:
 			configuration_setting = config[config_section].get(config_key).strip()
-			print(configuration_setting)
 			if " " in configuration_setting: # Is an array?
 				return configuration_setting.split()
 			else:
 				return configuration_setting
 		except Exception as e:
+			logging.warn(e)
 			if "default" in kwargs:
 				return kwargs["default"]
 			else:
