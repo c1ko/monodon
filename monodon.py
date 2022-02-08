@@ -39,7 +39,7 @@ group_scan_modes.add_argument("--chars", default=False, action='store_true', hel
 group_scan_modes.add_argument("--numbers", default=False, action='store_true', help="Iterate numbers in the domain name")
 group_scan_modes.add_argument("--phishing", default=False, action='store_true', help="Scan phishing wordlist")
 group_scan_modes.add_argument("--ccodes", default=False, action='store_true', help="Scan two-letter country codes")
-group_scan_modes.add_argument("--wiki",  type=str, nargs="?", help="Scan words from wikipedia lemmas (e.g. 'en:whale')")
+group_scan_modes.add_argument("--wiki",  type=str, nargs="+", help="Scan words from wikipedia lemmas (e.g. 'en:whale')")
 group_scan_modes.add_argument("--wordlist", type=str, nargs="?", help="Scan an additional wordlist file")
 
 homo_settings = parser.add_argument_group("homo settings")
@@ -314,7 +314,6 @@ if args.all or args.numbers:
 if args.all or args.wiki:
 	# Generate and scan related wordlist
 	lemmas = get_argument(args.wiki, "WIKI", "Lemmas")
-	print(lemmas)
 	logging.info(f"Generating wikipedia wordlist from lemmas {', '.join(lemmas)}")
 
 	related_terms = {}
