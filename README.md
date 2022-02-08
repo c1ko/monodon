@@ -23,19 +23,19 @@ You can configure most settings using the command line and the config.ini file. 
 To make use of monodon, you need to supply at least one scan mode and the scanword. The scanword usually is the name of your brand, or the host portion of the domain you want to find squats of. 
 
 ```
-(venv) [mono@mono monodon]$ ./monodon.py --tlds monodon
-2022-02-07 22:05:00,884 Loaded 9211 domains from publicsuffix.org
-2022-02-07 22:05:00,885 Scanning tlds
-2022-02-07 22:05:00,897 Scanning 1495 domains...
-2022-02-07 22:05:08,967 Found: monodon.cn on dns19.hichina.com.
-2022-02-07 22:05:08,971 Found: monodon.cz on mbox.netro.cz.
-2022-02-07 22:05:09,482 Found: monodon.co on ns53.domaincontrol.com.
-2022-02-07 22:05:09,504 Found: monodon.de on root-dns.netcup.net.
-2022-02-07 22:05:09,947 Found: monodon.com on ns1.namefind.com.
-2022-02-07 22:05:10,894 
-2022-02-07 22:05:10,894 Running since 0.0h, about 0.06h left
-2022-02-07 22:05:10,894 Scanned 74 of 1495 (4.95%), found 5 domains
-2022-02-07 22:05:10,894 Current scanrate is 9 scans/sec, scan-delay is 0.45s
+(venv) $ ./monodon.py --tlds monodon
+Loaded 9211 domains from publicsuffix.org
+Scanning tlds
+Scanning 1495 domains...
+Found: monodon.cn on dns19.hichina.com.
+Found: monodon.cz on mbox.netro.cz.
+Found: monodon.co on ns53.domaincontrol.com.
+Found: monodon.de on root-dns.netcup.net.
+Found: monodon.com on ns1.namefind.com.
+ 
+Running since 0.0h, about 0.06h left
+Scanned 74 of 1495 (4.95%), found 5 domains
+Current scanrate is 9 scans/sec, scan-delay is 0.45s
 ```
 
 ### Result format
@@ -75,18 +75,18 @@ Monodon supports various scan modes.
 `--wiki` Use wikipedia to generate term-related wordlists to scan. Monodon downloads the wikipedia article for a the given term(s) and generates a list of the most common words. You can supply lemmas in the config file or via the command line. Include the wikipedia language shorthand (e.g. "en" or "de"), seperated by a colon. To configure the number of used terms, use the `--wiki_count` option. 
 
 ```
-(venv) [mono@mono monodon]$ ./monodon.py --wiki en:whale de:narwal monodon 
-2022-02-07 22:34:43,261 Loaded 9211 domains from publicsuffix.org
-2022-02-07 22:34:43,262 Scanning generated wikipedia wordlist
-2022-02-07 22:34:44,380 Scanning 15000 domains..
+(venv) $ ./monodon.py --wiki en:whale de:narwal monodon 
+Loaded 9211 domains from publicsuffix.org
+Scanning generated wikipedia wordlist
+Scanning 15000 domains..
 ```
 
 If you only want to check which words were generated (and what rating they have), use the `--wiki_test` flag. No wikipedia queries will be executed in this case.
 
 ```
-(venv) [mono@mono monodon]$ ./monodon.py --wiki en:whale de:narwal --wiki_test --wiki_count 15  monodon
-2022-02-08 19:01:23 Loaded 9211 domains from publicsuffix.org
-2022-02-08 19:01:23 Generating wikipedia wordlist from lemmas en:whale, de:narwal
+(venv) $ ./monodon.py --wiki en:whale de:narwal --wiki_test --wiki_count 15  monodon
+Loaded 9211 domains from publicsuffix.org
+Generating wikipedia wordlist from lemmas en:whale, de:narwal
 ('the', 462), ('and', 240), ('whales', 114), ('are', 112), ('der', 107), ('die', 98), ('they', 91), ('und', 87), ('whale', 79), ('for', 67), ('their', 65), ('have', 59), ('which', 55), ('von', 51), ('that', 45)
 ```
 
