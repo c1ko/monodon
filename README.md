@@ -1,5 +1,5 @@
 # 🦷 monodon 🐋
-Domain abuse scanner covering domainsquatting and phishing keywords
+__Domain abuse scanner covering domainsquatting and phishing keywords.__
 
 ## Setup
 Monodon is a Python 3.7+ programm. To setup on a Linux machine with Python 3.7 or later, take the following steps.
