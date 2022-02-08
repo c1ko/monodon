@@ -30,6 +30,7 @@ parser.add_argument("--rate", type=parser_check_positive, default=10, help="Scan
 parser.add_argument("--nameserver", type=str, nargs="?", default=None, help="DNS server to use")
 parser.add_argument("--verbose", default=False, action="store_true", help="Log all DNS queries and errors")
 parser.add_argument("--simulate", default=False, action="store_true", help="Execute no queries")
+parser.add_argument("--unsafe", default=False, action="store_true", help="Disable safeguards that prevent DOS'ing nameservers")
 
 group_scan_modes = parser.add_argument_group("Scan modes")
 group_scan_modes.add_argument("--all", default=False, action='store_true', help="Execute all scanning techniques")
@@ -43,28 +44,18 @@ group_scan_modes.add_argument("--ccodes", default=False, action='store_true', he
 group_scan_modes.add_argument("--wiki",  type=str, nargs="+", help="Scan words from wikipedia lemmas (e.g. 'en:whale')")
 group_scan_modes.add_argument("--wordlist", type=str, nargs="?", help="Scan an additional wordlist file")
 
-homo_settings = parser.add_argument_group("homo settings")
-homo_settings.add_argument("--homo_tlds", type=str, nargs="+", help="TLDs to scan")
+tld_settings = parser.add_argument_group("TLD settings", "TLDs to scan in each mode. Supply domain names or shortcuts like top5, top15, or abused.")
+tld_settings.add_argument("--homo_tlds", type=str, nargs="+")
+tld_settings.add_argument("--chars_tlds", type=str, nargs="+")
+tld_settings.add_argument("--numbers_tlds", type=str, nargs="+")
+tld_settings.add_argument("--phishing_tlds", type=str, nargs="+")
+tld_settings.add_argument("--ccodes_tlds", type=str, nargs="+")
+tld_settings.add_argument("--wiki_tlds", type=str, nargs="+")
+tld_settings.add_argument("--wordlist_tlds", type=str, nargs="+")
 
-chars_settings = parser.add_argument_group("chars settings")
-chars_settings.add_argument("--chars_tlds", type=str, nargs="+", help="TLDs to scan")
-
-numbers_settings = parser.add_argument_group("numbers settings")
-numbers_settings.add_argument("--numbers_tlds", type=str, nargs="+", help="TLDs to scan")
-
-phishing_settings = parser.add_argument_group("phishing settings")
-phishing_settings.add_argument("--phishing_tlds", type=str, nargs="+", help="TLDs to scan")
-
-phishing_settings = parser.add_argument_group("ccodes settings")
-phishing_settings.add_argument("--ccodes_tlds", type=str, nargs="+", help="TLDs to scan")
-
-wiki_settings = parser.add_argument_group("wiki settings")
-wiki_settings.add_argument("--wiki_tlds", type=str, nargs="+", help="TLDs to scan")
+wiki_settings = parser.add_argument_group("Wiki settings")
 wiki_settings.add_argument("--wiki_count", type=parser_check_positive, help="Top # of Wikipedia terms to scan")
 wiki_settings.add_argument("--wiki_test", default=False, action="store_true", help="Print the wikipedia wordlist to check, dont scan")
-
-wordlist_settings = parser.add_argument_group("wordlist settings")
-wordlist_settings.add_argument("--wordlist_tlds", type=str, nargs="+", help="TLDs to scan")
 
 args = parser.parse_args()
 
@@ -109,10 +100,10 @@ def get_argument(argument, config_section, config_key, **kwargs):
 			else:
 				return configuration_setting
 		except Exception as e:
-			logging.warn(e)
 			if "default" in kwargs:
 				return kwargs["default"]
 			else:
+				logging.warning(e)
 				sys.exit(f"Configuration and arguments do not contain information on {config_section} {config_key}")
 
 
@@ -228,7 +219,8 @@ class WatchThread(threading.Thread):
 			if time.time() > START_TIME+5:
 				adjustment_factor = current_scanrate / self.target_scanrate
 				glob_scan_delay *= adjustment_factor
-				glob_scan_delay = max(0.1, glob_scan_delay) # Make sure that the we dont not accidentially DDOS somebody
+				if self.safe:
+					glob_scan_delay = max(0.1, glob_scan_delay) # Make sure that the we dont not accidentially DDOS somebody
 				glob_scan_delay = min(20, glob_scan_delay) # Make sure that the delay does not occilate to wildly
 
 			# Print current status
@@ -245,21 +237,22 @@ class WatchThread(threading.Thread):
 			i += 1
 			time.sleep(1)
 
-	def __init__(self, target_scanrate):
+	def __init__(self, target_scanrate, unsafe=args.unsafe):
 		super(WatchThread, self).__init__()
 		self.target_scanrate = target_scanrate
+		self.safe = not args.unsafe
 
 
 tld_gen = TLDGenerator(tldfile=args.tldfile, forcedtlds=args.forcetlds) # Initialize the tld generator
 
 # Start all threads
-watch_thread = WatchThread(args.rate)
+watch_thread = WatchThread(args.rate, unsafe=args.unsafe)
 watch_thread.daemon = True
 watch_thread.start()
 
 threadpool = []
 for i in range(0, get_argument(args.threads, "GENERAL", "threads")):
-	threadpool.append(ScanThread(nameserver=get_argument(args.nameserver, "GENERAL", "nameserver", default=False), simulate=args.simulate))
+	threadpool.append(ScanThread(nameserver=get_argument(args.nameserver, "GENERAL", "nameserver", default=None), simulate=args.simulate))
 	threadpool[-1].start()
 
 # Scan all tlds and known slds
