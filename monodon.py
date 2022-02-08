@@ -12,34 +12,57 @@ import queue
 import logging
 import threading 
 
-from utils.parser_checks import parser_check_rate, parser_check_threads
+from utils.parser_checks import parser_check_positive
 from utils.squat_generator import generate_char_simple, generate_homoglyphs, generate_numbers
 from utils.wikipedia_wordlist import generate_wikipedia_wordlist
 from utils.tld_generator import TLDGenerator
 from utils.utils import dedup
 
-URL_CHARS = list(string.ascii_lowercase) + list(string.digits) + ["-", "ä", "ö", "ü"]
 START_TIME = time.time()
 
 parser = argparse.ArgumentParser(description="Search for possible squatting domains")
 parser.add_argument("scanword", type=str, help="Which domain name / word to scan (without the TLD)")
 parser.add_argument("--config", type=str, default="config.ini", help="Config file to use")
-parser.add_argument("--all", default=False, action='store_true', help="Execute all scanning techniques")
-parser.add_argument("--tlds", default=False, action='store_true', help="Scan all tlds")
-parser.add_argument("--slds", default=False, action='store_true', help="Scan all tlds and known slds")
-parser.add_argument("--homo", default=False, action='store_true', help="Scan homoglyphs")
-parser.add_argument("--chars", default=False, action='store_true', help="Scan character replacements and additions")
-parser.add_argument("--numbers", default=False, action='store_true', help="Iterate numbers in the domain name")
-parser.add_argument("--phishing", default=False, action='store_true', help="Scan phishing wordlist")
-parser.add_argument("--ccodes", default=False, action='store_true', help="Scan two-letter country codes")
-parser.add_argument("--wiki",  default=False, action='store_true', help="Scan Wikipedia generated related word lists")
-parser.add_argument("--wikiterms", type=str, default=None, nargs="+", help="Wikipedia terms to scan instead of terms from config.ini")
-parser.add_argument("--wordlist", default=False, action='store_true', help="Scan wordlists defined in config file")
-parser.add_argument("--forcetlds", type=str, default=None, nargs="+", help="Override scan tlds set in the config.ini file")
+parser.add_argument("--forcetlds", type=str, default=None, nargs="+", help="Override TLDs for all scan modes")
 parser.add_argument("--tldfile", type=str, default=None, nargs="?", help="Instead of downloading a fresh copy from publicsuffix.org, use this as a list of all tlds and slds")
-parser.add_argument("--threads", type=parser_check_threads, default=5, help="Number of scanthreads to start")
-parser.add_argument("--rate", type=parser_check_rate, default=10, help="Scans per second to aim for")
+parser.add_argument("--threads", type=parser_check_positive, default=5, help="Number of scanthreads to start")
+parser.add_argument("--rate", type=parser_check_positive, default=10, help="Scans per second")
 parser.add_argument("--nameserver", type=str, nargs="?", default=None, help="DNS server to use")
+parser.add_argument("--verbose", default=False, action="store_true", help="Log all DNS queries and errors")
+
+group_scan_modes = parser.add_argument_group("Scan modes")
+group_scan_modes.add_argument("--all", default=False, action='store_true', help="Execute all scanning techniques")
+group_scan_modes.add_argument("--tlds", default=False, action='store_true', help="Scan all TLDs")
+group_scan_modes.add_argument("--slds", default=False, action='store_true', help="Scan all TLDs and known SLDs")
+group_scan_modes.add_argument("--homo", default=False, action='store_true', help="Scan homoglyphs")
+group_scan_modes.add_argument("--chars", default=False, action='store_true', help="Scan character replacements and additions")
+group_scan_modes.add_argument("--numbers", default=False, action='store_true', help="Iterate numbers in the domain name")
+group_scan_modes.add_argument("--phishing", default=False, action='store_true', help="Scan phishing wordlist")
+group_scan_modes.add_argument("--ccodes", default=False, action='store_true', help="Scan two-letter country codes")
+group_scan_modes.add_argument("--wiki",  type=str, nargs="?", help="Scan words from wikipedia lemmas (e.g. 'en:whale')")
+group_scan_modes.add_argument("--wordlist", type=str, nargs="?", help="Scan an additional wordlist file")
+
+homo_settings = parser.add_argument_group("homo settings")
+homo_settings.add_argument("--homo_tlds", type=str, nargs="+", help="TLDs to scan")
+
+chars_settings = parser.add_argument_group("chars settings")
+chars_settings.add_argument("--chars_tlds", type=str, nargs="+", help="TLDs to scan")
+
+numbers_settings = parser.add_argument_group("numbers settings")
+numbers_settings.add_argument("--numbers_tlds", type=str, nargs="+", help="TLDs to scan")
+
+phishing_settings = parser.add_argument_group("phishing settings")
+phishing_settings.add_argument("--phishing_tlds", type=str, nargs="+", help="TLDs to scan")
+
+phishing_settings = parser.add_argument_group("ccodes settings")
+phishing_settings.add_argument("--ccodes_tlds", type=str, nargs="+", help="TLDs to scan")
+
+wiki_settings = parser.add_argument_group("wiki settings")
+wiki_settings.add_argument("--wiki_tlds", type=str, nargs="+", help="TLDs to scan")
+wiki_settings.add_argument("--wiki_count", type=parser_check_positive, help="Top # of Wikipedia terms to scan")
+
+wordlist_settings = parser.add_argument_group("wordlist settings")
+wordlist_settings.add_argument("--wordlist_tlds", type=str, nargs="+", help="TLDs to scan")
 
 args = parser.parse_args()
 
@@ -60,7 +83,32 @@ con.commit()
 con.close()
 
 # Setup logging
-logging.basicConfig(format="%(asctime)s %(message)s", level=logging.INFO)
+logging_datefmt = "%Y-%m-%d %H:%M:%S"
+logging_level = logging.DEBUG if args.verbose else logging.INFO
+
+logging.basicConfig(format="%(asctime)s %(message)s", level=logging_level, datefmt=logging_datefmt)
+
+def get_argument(argument, config_section, config_key, **kwargs):
+	global config
+
+	# Try argument first
+	if argument is not None:
+		return argument
+
+	# Try config second
+	else:
+		try:
+			configuration_setting = config[config_section].get(config_key).strip()
+			if " " in configuration_setting: # Is an array?
+				return configuration_setting.split()
+			else:
+				return configuration_setting
+		except Exception as e:
+			if "default" in kwargs:
+				return kwargs["default"]
+			else:
+				sys.exit(f"Configuration and arguments do not contain information on {config_section} {config_key}")
+
 
 def load_wordlist_file(filename):
 	words = []
@@ -70,6 +118,7 @@ def load_wordlist_file(filename):
 
 	returnlist = dedup(words)
 	return returnlist
+
 
 def scan_host(host, tlds):
 	global glob_known_hosts, glob_scanpool
@@ -94,14 +143,10 @@ def scan_wordlist(scanword, wordlist, tld_list):
 
 class ScanThread(threading.Thread):
 	def _touch_domain(self, host, tld):
-		resolver = dns.resolver.Resolver()
-		if self.nameserver:
-			resolver.nameservers = [self.nameserver]
 		try:
-			soa_records = resolver.resolve(".".join([host, tld]), "SOA")
-		except dns.resolver.NXDOMAIN:
-			return False
+			soa_records = self.resolver.resolve(".".join([host, tld]), "SOA")
 		except Exception as e:
+			logging.debug(e)
 			return False
 
 		# Search the SOA records for master names
@@ -111,6 +156,7 @@ class ScanThread(threading.Thread):
 				try:
 					master_names.append(rdata.mname.to_text())
 				except Exception as e:
+					logging.debug(e)
 					return False
 
 		return list(set(master_names)) # Deduplicate
@@ -156,8 +202,9 @@ class ScanThread(threading.Thread):
 
 	def __init__(self, nameserver=None):
 		super(ScanThread, self).__init__()
-		self.busy = False
-		self.nameserver = nameserver
+		self.resolver = dns.resolver.Resolver()
+		if self.nameserver:
+			self.resolver.nameservers = [self.nameserver]
 
 
 class WatchThread(threading.Thread):
@@ -201,8 +248,8 @@ watch_thread.daemon = True
 watch_thread.start()
 
 threadpool = []
-for i in range(0, args.threads):
-	threadpool.append(ScanThread(nameserver=args.nameserver))
+for i in range(0, get_argument(args.threads, "GENERAL", "threads")):
+	threadpool.append(ScanThread(nameserver=get_argument(args.nameserver, "GENERAL", "nameserver", default=False)))
 	threadpool[-1].start()
 
 # Scan all tlds and known slds
@@ -229,14 +276,14 @@ if args.all or args.chars:
 
 	for host in generate_char_simple(SCANWORD):
 		if host != SCANWORD: 
-			scan_host(host, tld_gen.generate_tlds(config["CHARS"].get("TLDs", "abused")))
+			scan_host(host, tld_gen.generate_tlds(get_argument(args.chars_tlds, "CHARS", "TLDs")))
 
 # Scan homoglyphs
 if args.all or args.homo:
 	logging.info(f"Scanning homoglyphs")
 
 	for host in generate_homoglyphs(SCANWORD):
-		scan_host(host, tld_gen.generate_tlds(config["HOMO"].get("TLDs", "abused")))
+		scan_host(host, tld_gen.generate_tlds(get_argument(args.homo_tlds, "HOMO", "TLDs")))
 
 # Scan for all country codes
 if args.all or args.ccodes:
@@ -244,7 +291,7 @@ if args.all or args.ccodes:
 	scan_wordlist(
 		SCANWORD, 
 		load_wordlist_file("wordlists/country_codes.txt"), 
-		tld_gen.generate_tlds(config["CCODES"].get("TLDs", "abused"))
+		tld_gen.generate_tlds(get_argument(args.ccodes_tlds, "CCODES", "TLDs"))
 	)
 
 # Scan often-used phshing wordlist
@@ -253,7 +300,7 @@ if args.all or args.phishing:
 	scan_wordlist(
 		SCANWORD, 
 		load_wordlist_file("wordlists/phishing.txt"), 
-		tld_gen.generate_tlds(config["PHISHING"].get("TLDs", "abused"))
+		tld_gen.generate_tlds(get_argument(args.phishing_tlds, "PHISHING", "TLDs"))
 	)
 
 # Scan numbers
@@ -261,46 +308,39 @@ if args.all or args.numbers:
 	logging.info(f"Scanning numbers")
 
 	for host in generate_numbers(SCANWORD):
-		scan_host(host, tld_gen.generate_tlds(config["NUMBERS"].get("TLDs", "abused")))
-
-# Scan additional wordlists
-if args.all or args.wordlist:
-	logging.info(f"Scanning supplied wordlist")
-	for wordlist_path in config["WORDLIST"].get("Wordlists", "").split():
-		scan_wordlist(
-			SCANWORD,
-			load_wordlist_file(wordlist_path),
-			tld_gen.generate_tlds(config["WORDLIST"].get("TLDs", "abused"))
-		)
+		scan_host(host, tld_gen.generate_tlds(get_argument(args.numbers_tlds, "NUMBERS", "TLDs")))
 
 # Scan wikipedia wordlists
 if args.all or args.wiki:
 	# Generate and scan related wordlist
-	if args.wikiterms:
-		rt = args.wikiterms
-	else:
-		rt = config["WIKI"].get("Terms", "").split()
-		logging.info(f"Generating wikipedia wordlist of the related terms {', '.join(rt)}")
-
-	if rt == []:
-		logging.warn("Not scanning wikipedia wordlist, since no terms were supplied")
-	else:
-		logging.info("Scanning generated wikipedia wordlist")
+	lemmas = get_argument(args.wiki, "WIKI" "Lemmas")
+	logging.info(f"Generating wikipedia wordlist from lemmas {', '.join(rt)}")
 
 	related_terms = {}
-	for r in rt:
-		for term, relevance in generate_wikipedia_wordlist(config["WIKI"].get("Language", "en"), r):
+	for lemma in lemmas:
+		language_code = lemma.split(":")[0]
+		title = lemma.split(":")[1]
+		for term, relevance in generate_wikipedia_wordlist(title, language_code):
 			if term in related_terms:
 				related_terms[term] += relevance
 			else:
 				related_terms[term] = relevance
 
-	sorted_related_terms = sorted(related_terms.items(), key=lambda x: x[1], reverse=True)[:config["WIKI"].getint("Count", 750)]
+	sorted_related_terms = sorted(related_terms.items(), key=lambda x: x[1], reverse=True)[:get_argument(args.wiki_count, "WIKI", "Count")]
 
 	scan_wordlist(
 		SCANWORD, 
 		map(lambda x: x[0], sorted_related_terms), 
-		tld_gen.generate_tlds(config["WORDLIST"].get("TLDs", "top5"))
+		tld_gen.generate_tlds(get_argument(args.wiki_tlds, "WIKI", "TLDs"))
+	)
+
+# Scan additional wordlists
+if args.all or args.wordlist:
+	logging.info(f"Scanning wordlist")
+	scan_wordlist(
+		SCANWORD,
+		load_wordlist_file(get_argument(args.wordlist, "WORDLIST", "Path")),
+		tld_gen.generate_tlds(get_argument(args.wordlist_tlds, "WORDLIST", "TLDs"))
 	)
 
 logging.warning(f"Scanning {sum(map(lambda x: len(x), glob_known_hosts.values()))} domains...")
