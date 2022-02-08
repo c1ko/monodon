@@ -203,7 +203,7 @@ class ScanThread(threading.Thread):
 	def __init__(self, nameserver=None):
 		super(ScanThread, self).__init__()
 		self.resolver = dns.resolver.Resolver()
-		if self.nameserver:
+		if nameserver:
 			self.resolver.nameservers = [self.nameserver]
 
 
