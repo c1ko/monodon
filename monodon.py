@@ -335,7 +335,7 @@ if args.all or args.wiki:
 
 	sorted_related_terms = sorted(related_terms.items(), key=lambda x: x[1], reverse=True)[:int(get_argument(args.wiki_count, "WIKI", "Count"))]
 
-	if args.wiki_test is None:
+	if args.wiki_test is False:
 		scan_wordlist(
 			SCANWORD, 
 			map(lambda x: x[0], sorted_related_terms), 
