@@ -16,7 +16,7 @@ Monodon uses the SOA record of domains to check if is registered. The presence o
 
 Monodon will generate a DNS query for every domain to check. Public nameservers like `8.8.8.8`, `8.8.4.4`, and `9.9.9.9` can sustain 20 queries and more per second without throtteling. Set a nameserver using the `--nameserver` setting. Otherwise monodon will use your systems nameserver. You can control the rate of queries using the `--rate` argument. By default, `--rate` is set to 10 queries per second. 
 
-If you want to create more than 10 queries per second thread, use the `--unsafe` keyword. This safeguard protects from unwanted DOS attacks on public DNS servers. To not generate any actual DNS queries, use the `--simulate` argument. 
+If you want to create more than 10 queries per second and thread, use the `--unsafe` keyword. This safeguard protects from unwanted DOS attacks on public DNS servers. To not generate any actual DNS queries, use the `--simulate` argument. 
 
 ## Usage
 You can configure most settings using the command line and the config.ini file. Some options can only be set as an argument.
