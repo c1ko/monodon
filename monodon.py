@@ -337,7 +337,7 @@ if args.all or args.wiki:
 			tld_gen.generate_tlds(get_argument(args.wiki_tlds, "WIKI", "TLDs"))
 		)
 	else:
-		print(", ".join(str(sorted_related_terms)))
+		print(", ".join(map(lambda x: str(x), sorted_related_terms)))
 
 # Scan additional wordlists
 if args.all or args.wordlist:
