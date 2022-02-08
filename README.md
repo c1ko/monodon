@@ -74,8 +74,6 @@ Monodon supports various scan modes.
 
 `--wiki` Use wikipedia to generate term-related wordlists to scan. Monodon downloads the wikipedia article for a the given term(s) and generates a list of the most common words. You can supply lemmas in the config file or via the command line. Include the wikipedia language shorthand (e.g. "en" or "de"), seperated by a colon. To configure the number of used terms, use the `--wiki_count` option. 
 
-If you only want to check which words were generated (and what rating they have), use the `--wiki_test` flag. No wikipedia queries will be executed in this case.
-
 ```
 (venv) [mono@mono monodon]$ ./monodon.py --wiki en:whale de:narwal monodon 
 2022-02-07 22:34:43,261 Loaded 9211 domains from publicsuffix.org
@@ -83,7 +81,16 @@ If you only want to check which words were generated (and what rating they have)
 2022-02-07 22:34:44,380 Scanning 15000 domains..
 ```
 
-`--wordlist` Scan an additional wordlist file.
+If you only want to check which words were generated (and what rating they have), use the `--wiki_test` flag. No wikipedia queries will be executed in this case.
+
+```
+(venv) [mono@mono monodon]$ ./monodon.py --wiki en:whale de:narwal --wiki_test --wiki_count 15  monodon
+2022-02-08 19:01:23 Loaded 9211 domains from publicsuffix.org
+2022-02-08 19:01:23 Generating wikipedia wordlist from lemmas en:whale, de:narwal
+('the', 462), ('and', 240), ('whales', 114), ('are', 112), ('der', 107), ('die', 98), ('they', 91), ('und', 87), ('whale', 79), ('for', 67), ('their', 65), ('have', 59), ('which', 55), ('von', 51), ('that', 45)
+```
+
+`--wordlist` Scan an additional wordlist file, supplied as an argument or config.ini option.
 
 For most scan modes the scanned tlds can be set in the config.ini file. These defaults can be overriden using the `_tld` option for each mode. You can either supply direct tlds like "de" or "com", or prefiltered lists: "top5", "top15", "abused", "all_tlds". You can also use `--forcetlds` to execute all scans on a specific set of tlds, no matter what the config says.
 
