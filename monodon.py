@@ -314,7 +314,7 @@ if args.all or args.numbers:
 if args.all or args.wiki:
 	# Generate and scan related wordlist
 	lemmas = get_argument(args.wiki, "WIKI", "Lemmas")
-	logging.info(f"Generating wikipedia wordlist from lemmas {', '.join(rt)}")
+	logging.info(f"Generating wikipedia wordlist from lemmas {', '.join(lemmas)}")
 
 	related_terms = {}
 	for lemma in lemmas:
