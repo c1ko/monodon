@@ -110,6 +110,8 @@ For most scan modes the scanned tlds can be set in the config.ini file. These de
 
 `--unsafe` Allow more than 10 queries per scanning thread.
 
+`--unregistered` Experimental feature: Search for unregistered domains insted of registered domains. 
+
 ## Examples
 
 Scan all tlds for the exact hostname:
