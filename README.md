@@ -13,7 +13,7 @@ pip3 install -r requirements.txt
 
 To test the script, run a simple scan and abort it at any time:
 ```
-./monodon.py --chars --phishing --rate 2 --thredas 2 monodon
+./monodon.py --chars --phishing --rate 2 --threads 2 monodon
 ```
 
 ## Before usage
