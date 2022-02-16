@@ -20,6 +20,6 @@ for row in cur.execute("SELECT * FROM domains"):
 				break
 
 	if not filtered:
-		print(f"{row[0]}.{row[1]}\t{row[2]}")
+		print(f"{row[0]}.{row[1]}\t{row[2]}\t{row[-1]}")
 
 con.close()

@@ -73,7 +73,7 @@ glob_known_hosts = {}
 
 con = sqlite3.connect(f"{SCANWORD}.db")
 cur = con.cursor()
-cur.execute("CREATE TABLE IF NOT EXISTS domains (host text, tld text, master text, first_seen text, last_seen text, accepts_anyhost bool)")
+cur.execute("CREATE TABLE IF NOT EXISTS domains (host text, tld text, master text, first_seen text, last_seen text, accepts_anyhost bool, comment text)")
 con.commit()
 con.close()
 
@@ -130,25 +130,25 @@ def load_wordlist_file(filename):
 	return returnlist
 
 
-def scan_host(host, tlds):
+def scan_host(host, tlds, comment=None):
 	global glob_known_hosts, glob_scanpool
 	if host in glob_known_hosts:
 		# We cannot remove anything from the queue, so we add all of the tlds that will not already be scanned
 		remaining_tlds = [tld for tld in tlds if tld not in glob_known_hosts[host]]
 		if len(remaining_tlds) > 0:
-			glob_scanpool.put((host, remaining_tlds))
+			glob_scanpool.put((host, remaining_tlds, comment))
 			glob_known_hosts[host] += remaining_tlds
 	else:
 		glob_known_hosts[host] = tlds
-		glob_scanpool.put((host, tlds))
+		glob_scanpool.put((host, tlds, comment))
 
 
-def scan_wordlist(scanword, wordlist, tld_list):
+def scan_wordlist(scanword, wordlist, tld_list, comment=None):
 	for word in wordlist:
-		scan_host(f"{scanword}{word}", tld_list)
-		scan_host(f"{scanword}-{word}", tld_list)
-		scan_host(f"{word}{scanword}", tld_list)
-		scan_host(f"{word}-{scanword}", tld_list)
+		scan_host(f"{scanword}{word}", tld_list, comment=comment)
+		scan_host(f"{scanword}-{word}", tld_list, comment=comment)
+		scan_host(f"{word}{scanword}", tld_list, comment=comment)
+		scan_host(f"{word}-{scanword}", tld_list, comment=comment)
 
 
 class ScanThread(threading.Thread):
@@ -174,11 +174,11 @@ class ScanThread(threading.Thread):
 
 		return list(set(master_names)) # Deduplicate
 
-	def _note_domain(self, host, tld, master_name, accepts_anyhost, first_seen=time.time(), last_seen=time.time()):
+	def _note_domain(self, host, tld, master_name, accepts_anyhost, comment, first_seen=time.time(), last_seen=time.time()):
 		con = sqlite3.connect(f"{SCANWORD}.db")
 		cur = con.cursor()
-		domain_to_insert = (host, tld, master_name, str(first_seen), str(last_seen), accepts_anyhost)
-		sql = ("INSERT INTO domains(host,tld,master,first_seen,last_seen,accepts_anyhost) VALUES (?, ?, ?, ?, ?, ?)")	
+		domain_to_insert = (host, tld, master_name, str(first_seen), str(last_seen), accepts_anyhost, comment)
+		sql = ("INSERT INTO domains(host,tld,master,first_seen,last_seen,accepts_anyhost,comment) VALUES (?, ?, ?, ?, ?, ?, ?)")	
 		con.execute(sql, domain_to_insert)
 		con.commit()
 		con.close()
@@ -196,12 +196,12 @@ class ScanThread(threading.Thread):
 			if dns_result and self.unregistered == False:
 				logging.warning(f"Found: {host}.{tld} on {dns_result[0]}")
 				accepts_anyhost = True if self._touch_domain("".join(random.choices(string.ascii_lowercase, k=15)), tld) else False
-				self._note_domain(host, tld, dns_result[0], accepts_anyhost)
+				self._note_domain(host, tld, dns_result[0], accepts_anyhost, to_scan[2])
 				glob_found_domains += 1
 
 			elif not dns_result and self.unregistered == True:
 				logging.warning(f"Unregistered: {host}.{tld}")
-				self._note_domain(host, tld, "UNREGISTERED", False)
+				self._note_domain(host, tld, "UNREGISTERED", False, to_scan[2])
 				glob_found_domains += 1
 
 			time.sleep(glob_scan_delay)
@@ -281,7 +281,7 @@ if args.all or args.slds:
 	# Split this task into smaller chunks to make it multi-threaded
 	tlds_to_scan = tld_gen.generate_tlds("all_tlds_incl_slds")
 	for i in range(0, len(tlds_to_scan), 10):
-		scan_host(SCANWORD, tlds_to_scan[i:i+10])
+		scan_host(SCANWORD, tlds_to_scan[i:i+10], comment="slds")
 
 # Scan all tlds
 elif args.tlds:
@@ -290,7 +290,7 @@ elif args.tlds:
 	# Split this task into smaller chunks to make it multi-threaded
 	tlds_to_scan = tld_gen.generate_tlds("all_tlds")
 	for i in range(0, len(tlds_to_scan), 10):
-		scan_host(SCANWORD, tlds_to_scan[i:i+10])
+		scan_host(SCANWORD, tlds_to_scan[i:i+10], comment="tlds")
 
 # Scan for character replacement and addition squatting
 if args.all or args.chars:
@@ -298,14 +298,14 @@ if args.all or args.chars:
 
 	for host in generate_char_simple(SCANWORD):
 		if host != SCANWORD: 
-			scan_host(host, tld_gen.generate_tlds(get_argument(args.chars_tlds, "CHARS", "TLDs", return_type=list)))
+			scan_host(host, tld_gen.generate_tlds(get_argument(args.chars_tlds, "CHARS", "TLDs", return_type=list)), comment="character replacement")
 
 # Scan homoglyphs
 if args.all or args.homo:
 	logging.info(f"Scanning homoglyphs")
 
 	for host in generate_homoglyphs(SCANWORD):
-		scan_host(host, tld_gen.generate_tlds(get_argument(args.homo_tlds, "HOMO", "TLDs", return_type=list)))
+		scan_host(host, tld_gen.generate_tlds(get_argument(args.homo_tlds, "HOMO", "TLDs", return_type=list)), comment="homoglyphs")
 
 # Scan for all country codes
 if args.all or args.ccodes:
@@ -313,7 +313,8 @@ if args.all or args.ccodes:
 	scan_wordlist(
 		SCANWORD, 
 		load_wordlist_file("wordlists/country_codes.txt"), 
-		tld_gen.generate_tlds(get_argument(args.ccodes_tlds, "CCODES", "TLDs", return_type=list))
+		tld_gen.generate_tlds(get_argument(args.ccodes_tlds, "CCODES", "TLDs", return_type=list)),
+		comment="country codes"
 	)
 
 # Scan often-used phshing wordlist
@@ -322,7 +323,8 @@ if args.all or args.phishing:
 	scan_wordlist(
 		SCANWORD, 
 		load_wordlist_file("wordlists/phishing.txt"), 
-		tld_gen.generate_tlds(get_argument(args.phishing_tlds, "PHISHING", "TLDs", return_type=list))
+		tld_gen.generate_tlds(get_argument(args.phishing_tlds, "PHISHING", "TLDs", return_type=list)),
+		comment="phishing wordlist"
 	)
 
 # Scan numbers
@@ -330,7 +332,7 @@ if args.all or args.numbers:
 	logging.info(f"Scanning numbers")
 
 	for host in generate_numbers(SCANWORD):
-		scan_host(host, tld_gen.generate_tlds(get_argument(args.numbers_tlds, "NUMBERS", "TLDs", return_type=list)))
+		scan_host(host, tld_gen.generate_tlds(get_argument(args.numbers_tlds, "NUMBERS", "TLDs", return_type=list)), comment="numbers")
 
 # Scan wikipedia wordlists
 if args.all or args.wiki:
@@ -354,7 +356,8 @@ if args.all or args.wiki:
 		scan_wordlist(
 			SCANWORD, 
 			map(lambda x: x[0], sorted_related_terms), 
-			tld_gen.generate_tlds(get_argument(args.wiki_tlds, "WIKI", "TLDs", return_type=list))
+			tld_gen.generate_tlds(get_argument(args.wiki_tlds, "WIKI", "TLDs", return_type=list)),
+			comment="wikipedia wordlist"
 		)
 	else:
 		print(", ".join(map(lambda x: str(x), sorted_related_terms)))
@@ -365,7 +368,8 @@ if args.all or args.wordlist:
 	scan_wordlist(
 		SCANWORD,
 		load_wordlist_file(get_argument(args.wordlist, "WORDLIST", "Path", return_type=str)),
-		tld_gen.generate_tlds(get_argument(args.wordlist_tlds, "WORDLIST", "TLDs", return_type=list))
+		tld_gen.generate_tlds(get_argument(args.wordlist_tlds, "WORDLIST", "TLDs", return_type=list)),
+		comment="additional wordlist"
 	)
 
 logging.warning(f"Scanning {sum(map(lambda x: len(x), glob_known_hosts.values()))} domains...")
