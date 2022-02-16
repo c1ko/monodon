@@ -9,8 +9,11 @@ git clone https://github.com/c1ko/monodon.git
 python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
+```
 
-./monodon.py --chars --phishing monodon  # test run
+To test the script, run a simple scan and abort it at any time:
+```
+./monodon.py --chars --phishing --rate 2 --thredas 2 monodon
 ```
 
 ## Before usage
