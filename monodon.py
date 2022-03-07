@@ -67,6 +67,7 @@ config.read(args.config)
 SCANWORD = args.scanword.lower()
 glob_scancounter = 0
 glob_found_domains = 0
+glob_server_timeouts = 0
 glob_scan_delay = 1.0
 glob_scanpool = queue.SimpleQueue()
 glob_known_hosts = {}
@@ -152,12 +153,22 @@ def scan_wordlist(scanword, wordlist, tld_list, comment=None):
 
 
 class ScanThread(threading.Thread):
-	def _touch_domain(self, host, tld):
+	def _touch_domain(self, host, tld, try_nr=0):
+		global glob_server_timeouts
+
 		if self.simulate:
 			return False
 
 		try:
 			soa_records = self.resolver.resolve(".".join([host, tld]), "SOA")
+		except dns.exception.Timeout:
+			logging.warning(f"Timeout: scanning {host}.{tld}")
+			glob_server_timeouts += 1 # Mark that a timeout has occurred
+			if try_nr < 3:
+				return self._touch_domain(host, tld, try_nr=try_nr+1) # Retry
+			else:
+				return False  # Abort
+
 		except Exception as e:
 			logging.debug(e)
 			return False
@@ -229,7 +240,7 @@ class ScanThread(threading.Thread):
 
 class WatchThread(threading.Thread):
 	def run(self):
-		global glob_scan_delay, glob_scancounter, glob_scanpool, glob_known_hosts, glob_found_domains, START_TIME
+		global glob_scan_delay, glob_scancounter, glob_scanpool, glob_known_hosts, glob_found_domains, glob_server_timeouts, START_TIME
 		last_scancounter = 0
 		i = 0
 		while True:
@@ -252,12 +263,20 @@ class WatchThread(threading.Thread):
 				logging.info(f"Current scanrate is {current_scanrate} scans/sec, scan-delay is {round(glob_scan_delay,2)}s")
 				logging.info("")
 
+				# Adjust scanrate of too many timeouts happen
+				if glob_server_timeouts > 0 and self.target_scanrate > 1:
+					self.target_scanrate = self.target_scanrate - 1
+				elif self.target_scanrate < self.initial_scanrate:
+					self.target_scanrate += 1
+				glob_server_timeouts = 0
+
 			last_scancounter = copy.copy(glob_scancounter)
 			i += 1
 			time.sleep(1)
 
 	def __init__(self, target_scanrate, unsafe=args.unsafe):
 		super(WatchThread, self).__init__()
+		self.initial_scanrate = target_scanrate
 		self.target_scanrate = target_scanrate
 		self.safe = not args.unsafe
 
