@@ -32,6 +32,8 @@ parser.add_argument("--nameserver", type=str, nargs="?", default=None, help="DNS
 parser.add_argument("--verbose", default=False, action="store_true", help="Log all DNS queries and errors")
 parser.add_argument("--simulate", default=False, action="store_true", help="Execute no queries")
 parser.add_argument("--unsafe", default=False, action="store_true", help="Disable safeguards that prevent DOS'ing nameservers")
+parser.add_argument("--timeout", type=int, help="DNS query timeout")
+parser.add_argument("--retries", type=int, help="How often to retry a timed-out DNS query")
 parser.add_argument("--unregistered", default=False, action="store_true", help="Experimental: Instead of finding registered domains, log unregistered domain names")
 
 group_scan_modes = parser.add_argument_group("Scan modes")
@@ -164,7 +166,7 @@ class ScanThread(threading.Thread):
 		except dns.exception.Timeout:
 			logging.warning(f"Timeout: scanning {host}.{tld}")
 			glob_server_timeouts += 1 # Mark that a timeout has occurred
-			if try_nr < 3:
+			if try_nr < self.retries:
 				return self._touch_domain(host, tld, try_nr=try_nr+1) # Retry
 			else:
 				return False  # Abort
@@ -229,10 +231,13 @@ class ScanThread(threading.Thread):
 				self.scan_tlds(to_scan)
 
 
-	def __init__(self, nameserver=None, simulate=False, unregistered=False):
+	def __init__(self, nameserver=None, simulate=False, unregistered=False, timeout=5, retries=1):
 		super(ScanThread, self).__init__()
 		self.resolver = dns.resolver.Resolver()
+		self.resolver.timeout = timeout
+		self.resolver.lifetime = timeout
 		self.simulate = simulate
+		self.retries = retries
 		self.unregistered = unregistered
 		if nameserver:
 			self.resolver.nameservers = [nameserver]
@@ -290,7 +295,13 @@ watch_thread.start()
 
 threadpool = []
 for i in range(0, get_argument(args.threads, "GENERAL", "threads", return_type=int)):
-	threadpool.append(ScanThread(nameserver=get_argument(args.nameserver, "GENERAL", "nameserver", default=None, return_type=str), simulate=args.simulate, unregistered=args.unregistered))
+	threadpool.append(ScanThread(
+		nameserver=get_argument(args.nameserver, "GENERAL", "nameserver", default=None, return_type=str), 
+		simulate=args.simulate, 
+		unregistered=args.unregistered,
+		retries=get_argument(args.retries, "GENERAL", "retries", default=1, return_type=int),
+		timeout=get_argument(args.timeout, "GENERAL", "timeout", default=5, return_type=int)
+	))
 	threadpool[-1].start()
 
 # Scan all tlds and known slds
