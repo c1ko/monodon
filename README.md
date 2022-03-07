@@ -117,9 +117,9 @@ For most scan modes the scanned tlds can be set in the config.ini file. These de
 
 `--unregistered` Experimental feature: Search for unregistered domains instead of registered domains.
 
-`--timeout` How long should monodon wait for a DNS server to answer. Default is 5 seconds.
+`--timeout` How long to wait for a DNS answer. Default is 5 seconds.
 
-`--retries` How often should monodon retry in case of a timeout. Default is once.
+`--retries` Number of retries in case of a timeout. Default is once.
 
 ## Examples
 
