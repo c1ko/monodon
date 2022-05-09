@@ -9,7 +9,7 @@ def generate_wikipedia_wordlist(title, language_code):
 	relevant_words = {}
 
 	for word in extract.split():
-		word = word.strip()
+		word = word.strip(" -")
 		word = word.lower()
 		
 		if len(word) <= 2: continue
